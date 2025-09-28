@@ -232,7 +232,7 @@ export function History() {
             <CardTitle>Recent Activity</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {historicalData.slice(-5).reverse().map((day, index) => (
+            {historicalData.slice(-5).reverse().map((day) => (
               <div key={day.date} className="flex items-center justify-between py-2 border-b last:border-b-0">
                 <div>
                   <p className="font-medium">{new Date(day.date).toLocaleDateString()}</p>
