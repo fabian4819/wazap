@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -9,49 +10,91 @@ import {
   Gauge
 } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts'
-
-const energyData = [
-  { time: '00:00', energy: 0.5, voltage: 2.1 },
-  { time: '04:00', energy: 0.3, voltage: 1.8 },
-  { time: '08:00', energy: 2.1, voltage: 3.2 },
-  { time: '12:00', energy: 3.5, voltage: 4.1 },
-  { time: '16:00', energy: 4.2, voltage: 4.8 },
-  { time: '20:00', energy: 2.8, voltage: 3.6 },
-  { time: '24:00', energy: 1.2, voltage: 2.4 },
-]
-
-const stats = [
-  {
-    title: 'Total Energy Generated',
-    value: '47.3 mWh',
-    change: '+12.5%',
-    icon: Zap,
-    color: 'text-green-600'
-  },
-  {
-    title: 'Current Voltage',
-    value: '3.8V',
-    change: '+2.1%',
-    icon: Gauge,
-    color: 'text-blue-600'
-  },
-  {
-    title: 'Active Steps Today',
-    value: '12,847',
-    change: '+18.2%',
-    icon: Users,
-    color: 'text-purple-600'
-  },
-  {
-    title: 'System Efficiency',
-    value: '94.2%',
-    change: '+0.5%',
-    icon: TrendingUp,
-    color: 'text-orange-600'
-  }
-]
+import { dashboardApi } from '@/lib/api'
+import type { EnergyData } from '@/lib/api'
 
 export function Dashboard() {
+  const [totalEnergy, setTotalEnergy] = useState(0)
+  const [currentVoltage, setCurrentVoltage] = useState(0)
+  const [energyData, setEnergyData] = useState<EnergyData[]>([])
+  const [voltageData, setVoltageData] = useState<EnergyData[]>([])
+  const [energyStorage, setEnergyStorage] = useState({ current: 0, capacity: 0, percentage: 0 })
+  const [peakGeneration, setPeakGeneration] = useState({ peak: 0, timestamp: '' })
+  const [averageVoltage, setAverageVoltage] = useState(0)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true)
+        const [
+          totalEnergyRes,
+          currentVoltageRes,
+          energyGen24h,
+          voltageOut24h,
+          storage,
+          peak,
+          avgVoltage
+        ] = await Promise.all([
+          dashboardApi.getTotalEnergy(),
+          dashboardApi.getCurrentVoltage(),
+          dashboardApi.getEnergyGeneration24h(),
+          dashboardApi.getVoltageOutput24h(),
+          dashboardApi.getEnergyStorage(),
+          dashboardApi.getPeakGeneration(),
+          dashboardApi.getAverageVoltage()
+        ])
+
+        setTotalEnergy(totalEnergyRes.totalEnergy)
+        setCurrentVoltage(currentVoltageRes.voltage)
+        setEnergyData(energyGen24h)
+        setVoltageData(voltageOut24h)
+        setEnergyStorage(storage)
+        setPeakGeneration(peak)
+        setAverageVoltage(avgVoltage.average)
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchDashboardData()
+    const interval = setInterval(fetchDashboardData, 30000) // Refresh every 30 seconds
+
+    return () => clearInterval(interval)
+  }, [])
+
+  const stats = [
+    {
+      title: 'Total Energy Generated',
+      value: loading ? '...' : `${totalEnergy.toFixed(1)} mWh`,
+      change: '+12.5%',
+      icon: Zap,
+      color: 'text-green-600'
+    },
+    {
+      title: 'Current Voltage',
+      value: loading ? '...' : `${currentVoltage.toFixed(1)}V`,
+      change: '+2.1%',
+      icon: Gauge,
+      color: 'text-blue-600'
+    },
+    {
+      title: 'Active Steps Today',
+      value: '12,847',
+      change: '+18.2%',
+      icon: Users,
+      color: 'text-purple-600'
+    },
+    {
+      title: 'System Efficiency',
+      value: '94.2%',
+      change: '+0.5%',
+      icon: TrendingUp,
+      color: 'text-orange-600'
+    }
+  ]
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -102,7 +145,7 @@ export function Dashboard() {
           </CardHeader>
           <CardContent className="pl-2">
             <ResponsiveContainer width="100%" height={350}>
-              <AreaChart data={energyData}>
+              <AreaChart data={energyData.length > 0 ? energyData : [{ time: '00:00', energy: 0, voltage: 0 }]}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="time" />
                 <YAxis />
@@ -130,7 +173,7 @@ export function Dashboard() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={350}>
-              <LineChart data={energyData}>
+              <LineChart data={voltageData.length > 0 ? voltageData : [{ time: '00:00', energy: 0, voltage: 0 }]}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="time" />
                 <YAxis />
@@ -183,13 +226,13 @@ export function Dashboard() {
           <CardContent className="space-y-3">
             <div className="flex justify-between">
               <span className="text-sm">Current Charge</span>
-              <span className="font-medium">78%</span>
+              <span className="font-medium">{loading ? '...' : `${energyStorage.percentage}%`}</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
-              <div className="bg-green-500 h-2 rounded-full" style={{ width: '78%' }}></div>
+              <div className="bg-green-500 h-2 rounded-full" style={{ width: `${energyStorage.percentage}%` }}></div>
             </div>
             <div className="text-xs text-muted-foreground">
-              Estimated full charge in 2.3 hours
+              {loading ? 'Loading...' : `${energyStorage.current?.toFixed(1) || 0} / ${energyStorage.capacity?.toFixed(1) || 0} mWh`}
             </div>
           </CardContent>
         </Card>
@@ -201,19 +244,19 @@ export function Dashboard() {
           <CardContent className="space-y-3">
             <div className="flex justify-between">
               <span className="text-sm">Peak Generation</span>
-              <span className="font-medium">4.2 mWh</span>
+              <span className="font-medium">{loading ? '...' : `${peakGeneration.peak?.toFixed(1) || 0} mWh`}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm">Average Voltage</span>
-              <span className="font-medium">3.2V</span>
+              <span className="font-medium">{loading ? '...' : `${averageVoltage?.toFixed(1) || 0}V`}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-sm">Uptime</span>
-              <span className="font-medium">23h 47m</span>
+              <span className="text-sm">Peak Time</span>
+              <span className="font-medium">{loading ? '...' : peakGeneration.timestamp ? new Date(peakGeneration.timestamp).toLocaleTimeString() : 'N/A'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm">Data Points</span>
-              <span className="font-medium">1,428</span>
+              <span className="font-medium">{energyData.length}</span>
             </div>
           </CardContent>
         </Card>

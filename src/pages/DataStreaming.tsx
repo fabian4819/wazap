@@ -33,31 +33,47 @@ export function DataStreaming() {
     temperature: 25.0
   })
 
-  const generateRandomData = (): DataPoint => ({
-    timestamp: new Date().toISOString(),
-    voltage: 2.5 + Math.random() * 2.0,
-    current: 0.5 + Math.random() * 1.5,
-    power: (2.5 + Math.random() * 2.0) * (0.5 + Math.random() * 1.5),
-    temperature: 24.0 + Math.random() * 3.0
-  })
-
   useEffect(() => {
-    let interval: NodeJS.Timeout
+    let eventSource: EventSource | null = null
 
     if (isStreaming) {
-      interval = setInterval(() => {
-        const newData = generateRandomData()
-        setCurrentReading(newData)
+      // Create Server-Sent Events connection for raw data stream
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
+      eventSource = new EventSource(`${API_BASE_URL}/api/data/stream/raw`)
 
-        setRealtimeData(prev => {
-          const updated = [...prev, { ...newData, timestamp: new Date().toLocaleTimeString() }]
-          return updated.slice(-20)
-        })
-      }, 1000)
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data)
+          const newReading: DataPoint = {
+            timestamp: data.timestamp || new Date().toISOString(),
+            voltage: data.voltage || 0,
+            current: data.current || 0,
+            power: data.power || 0,
+            temperature: data.temperature || 25.0
+          }
+
+          setCurrentReading(newReading)
+
+          setRealtimeData(prev => {
+            const updated = [...prev, { ...newReading, timestamp: new Date(newReading.timestamp).toLocaleTimeString() }]
+            return updated.slice(-20)
+          })
+        } catch (error) {
+          console.error('Error parsing stream data:', error)
+        }
+      }
+
+      eventSource.onerror = (error) => {
+        console.error('EventSource error:', error)
+        eventSource?.close()
+        setIsStreaming(false)
+      }
     }
 
     return () => {
-      if (interval) clearInterval(interval)
+      if (eventSource) {
+        eventSource.close()
+      }
     }
   }, [isStreaming])
 

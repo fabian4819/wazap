@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -10,30 +10,57 @@ import {
   TrendingDown
 } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
-
-const historicalData = [
-  { date: '2024-01-01', energy: 45.2, steps: 8920, efficiency: 92.1 },
-  { date: '2024-01-02', energy: 52.8, steps: 11450, efficiency: 94.3 },
-  { date: '2024-01-03', energy: 38.7, steps: 7230, efficiency: 89.5 },
-  { date: '2024-01-04', energy: 61.3, steps: 13680, efficiency: 96.2 },
-  { date: '2024-01-05', energy: 48.9, steps: 9870, efficiency: 91.8 },
-  { date: '2024-01-06', energy: 55.4, steps: 12100, efficiency: 93.7 },
-  { date: '2024-01-07', energy: 42.1, steps: 8540, efficiency: 90.4 },
-]
-
-const weeklyData = [
-  { week: 'Week 1', energy: 312.4, avgSteps: 10227 },
-  { week: 'Week 2', energy: 287.9, avgSteps: 9456 },
-  { week: 'Week 3', energy: 346.7, avgSteps: 11203 },
-  { week: 'Week 4', energy: 298.1, avgSteps: 9834 },
-]
+import { historyApi } from '@/lib/api'
+import type { DailyData, WeeklyData, RecentActivity } from '@/lib/api'
 
 export function History() {
   const [timeRange, setTimeRange] = useState('7days')
+  const [dailyData, setDailyData] = useState<DailyData[]>([])
+  const [weeklyData, setWeeklyData] = useState<WeeklyData[]>([])
+  const [bestPerformance, setBestPerformance] = useState({ date: '', energy: 0, efficiency: 0 })
+  const [avgDailyOutput, setAvgDailyOutput] = useState({ avgEnergy: 0, avgSteps: 0 })
+  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const totalEnergy = historicalData.reduce((sum, day) => sum + day.energy, 0)
-  const avgEfficiency = historicalData.reduce((sum, day) => sum + day.efficiency, 0) / historicalData.length
-  const totalSteps = historicalData.reduce((sum, day) => sum + day.steps, 0)
+  useEffect(() => {
+    const fetchHistoryData = async () => {
+      try {
+        setLoading(true)
+        const [
+          daily7Days,
+          weekly,
+          performance,
+          avgOutput,
+          recent
+        ] = await Promise.all([
+          historyApi.getDailyEnergy7Days(),
+          historyApi.getWeeklyEnergy(),
+          historyApi.getBestPerformance(),
+          historyApi.getAverageDailyOutput(),
+          historyApi.getRecentActivity()
+        ])
+
+        setDailyData(daily7Days)
+        setWeeklyData(weekly)
+        setBestPerformance(performance)
+        setAvgDailyOutput(avgOutput)
+        setRecentActivity(recent)
+      } catch (error) {
+        console.error('Error fetching history data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchHistoryData()
+  }, [timeRange])
+
+  const currentData = dailyData.length > 0 ? dailyData : []
+  const totalEnergy = currentData.reduce((sum, day) => sum + day.energy, 0)
+  const avgEfficiency = currentData.length > 0
+    ? currentData.reduce((sum, day) => sum + day.efficiency, 0) / currentData.length
+    : 0
+  const totalSteps = currentData.reduce((sum, day) => sum + day.steps, 0)
 
   return (
     <div className="space-y-6">
@@ -125,7 +152,7 @@ export function History() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={historicalData}>
+              <LineChart data={currentData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
                   dataKey="date"
@@ -174,13 +201,13 @@ export function History() {
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={historicalData}>
+            <LineChart data={currentData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis
                 dataKey="date"
                 tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
               />
-              <YAxis domain={[85, 100]} />
+              <YAxis domain={currentData.length > 0 ? [85, 100] : [0, 100]} />
               <Tooltip
                 labelFormatter={(value) => new Date(value).toLocaleDateString()}
                 formatter={(value) => [`${value}%`, 'Efficiency']}
@@ -206,21 +233,27 @@ export function History() {
             <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
               <div>
                 <p className="font-medium text-green-800">Best Performance Day</p>
-                <p className="text-sm text-green-600">January 4th - 61.3 mWh</p>
+                <p className="text-sm text-green-600">
+                  {loading ? 'Loading...' : bestPerformance.date ? `${new Date(bestPerformance.date).toLocaleDateString()} - ${bestPerformance.energy?.toFixed(1) || 0} mWh` : 'N/A'}
+                </p>
               </div>
               <TrendingUp className="h-5 w-5 text-green-600" />
             </div>
             <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
               <div>
                 <p className="font-medium text-blue-800">Most Efficient Day</p>
-                <p className="text-sm text-blue-600">January 4th - 96.2%</p>
+                <p className="text-sm text-blue-600">
+                  {loading ? 'Loading...' : bestPerformance.date ? `${new Date(bestPerformance.date).toLocaleDateString()} - ${bestPerformance.efficiency?.toFixed(1) || 0}%` : 'N/A'}
+                </p>
               </div>
               <Badge variant="outline" className="bg-blue-100 text-blue-700">Excellent</Badge>
             </div>
             <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg border border-orange-200">
               <div>
                 <p className="font-medium text-orange-800">Average Daily Output</p>
-                <p className="text-sm text-orange-600">49.2 mWh per day</p>
+                <p className="text-sm text-orange-600">
+                  {loading ? 'Loading...' : `${avgDailyOutput.avgEnergy?.toFixed(1) || 0} mWh per day`}
+                </p>
               </div>
               <Badge variant="outline" className="bg-orange-100 text-orange-700">Good</Badge>
             </div>
@@ -232,18 +265,24 @@ export function History() {
             <CardTitle>Recent Activity</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {historicalData.slice(-5).reverse().map((day) => (
-              <div key={day.date} className="flex items-center justify-between py-2 border-b last:border-b-0">
-                <div>
-                  <p className="font-medium">{new Date(day.date).toLocaleDateString()}</p>
-                  <p className="text-sm text-muted-foreground">{day.steps.toLocaleString()} steps</p>
+            {loading ? (
+              <p className="text-sm text-muted-foreground">Loading...</p>
+            ) : recentActivity.length > 0 ? (
+              recentActivity.slice(-5).reverse().map((day, index) => (
+                <div key={day.date || index} className="flex items-center justify-between py-2 border-b last:border-b-0">
+                  <div>
+                    <p className="font-medium">{new Date(day.date).toLocaleDateString()}</p>
+                    <p className="text-sm text-muted-foreground">{day.steps?.toLocaleString() || 0} steps</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-medium">{day.energy?.toFixed(1) || 0} mWh</p>
+                    <p className="text-sm text-muted-foreground">{day.efficiency?.toFixed(1) || 0}% eff.</p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-medium">{day.energy} mWh</p>
-                  <p className="text-sm text-muted-foreground">{day.efficiency}% eff.</p>
-                </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground">No recent activity</p>
+            )}
           </CardContent>
         </Card>
       </div>
