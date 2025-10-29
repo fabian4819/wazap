@@ -1,0 +1,64 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            APP_DIR="$HOME/apps/wazap"
+
+            # Pull latest changes
+            cd $APP_DIR
+            git pull origin ${{ github.ref_name }}
+
+            # Install dependencies and build
+            npm install
+            npm run build
+
+            # Copy nginx config if changed
+            if [ -f /tmp/nginx-wazap.conf ]; then
+              sudo cp /tmp/nginx-wazap.conf /etc/nginx/sites-available/wazap
+              sudo nginx -t && sudo systemctl reload nginx
+            fi
+
+            echo "Deployment completed at $(date)"
+
+      - name: Deployment notification
+        if: always()
+        run: |
+          if [ ${{ job.status }} == 'success' ]; then
+            echo "Deployment successful!"
+          else
+            echo "Deployment failed!"
+            exit 1
+          fi
