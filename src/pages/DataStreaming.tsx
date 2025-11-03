@@ -107,12 +107,12 @@ export function DataStreaming() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Data Streaming</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Data Streaming</h2>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Real-time data from piezoelectric sensors and STM32 microcontroller
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             onClick={handleStartStreaming}
             disabled={isStreaming}
@@ -265,7 +265,8 @@ export function DataStreaming() {
             <CardDescription>Real-time voltage measurements from piezoelectric sensor</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+            <div className="h-[250px] sm:h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
               <LineChart data={realtimeData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="timestamp" />
@@ -281,6 +282,7 @@ export function DataStreaming() {
                 />
               </LineChart>
             </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
 
@@ -290,7 +292,8 @@ export function DataStreaming() {
             <CardDescription>Real-time power output calculations</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+            <div className="h-[250px] sm:h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
               <LineChart data={realtimeData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="timestamp" />
@@ -306,6 +309,7 @@ export function DataStreaming() {
                 />
               </LineChart>
             </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -353,9 +357,9 @@ export function DataStreaming() {
             <div className="max-h-60 overflow-y-auto">
               <div className="space-y-2">
                 {realtimeData.slice().reverse().map((reading, index) => (
-                  <div key={index} className="flex items-center justify-between py-2 px-3 bg-muted/50 rounded text-sm">
-                    <span className="font-mono">{reading.timestamp}</span>
-                    <div className="flex gap-4">
+                  <div key={index} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 py-2 px-3 bg-muted/50 rounded text-sm">
+                    <span className="font-mono text-xs sm:text-sm">{reading.timestamp}</span>
+                    <div className="flex flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm">
                       <span>V: {reading.voltage.toFixed(2)}V</span>
                       <span>I: {reading.current.toFixed(2)}mA</span>
                       <span>P: {reading.power.toFixed(2)}mW</span>

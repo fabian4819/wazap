@@ -97,14 +97,14 @@ export function Dashboard() {
   ]
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Dashboard</h2>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Real-time energy generation and system monitoring
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
             <Power className="w-3 h-3 mr-1" />
             Online
@@ -136,7 +136,7 @@ export function Dashboard() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4">
+        <Card className="md:col-span-2 lg:col-span-4">
           <CardHeader>
             <CardTitle>Energy Generation</CardTitle>
             <CardDescription>
@@ -144,7 +144,8 @@ export function Dashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent className="pl-2">
-            <ResponsiveContainer width="100%" height={350}>
+            <div className="h-[250px] sm:h-[300px] lg:h-[350px]">
+            <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={energyData.length > 0 ? energyData : [{ time: '00:00', energy: 0, voltage: 0 }]}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="time" />
@@ -161,10 +162,11 @@ export function Dashboard() {
                 />
               </AreaChart>
             </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="col-span-3">
+        <Card className="md:col-span-2 lg:col-span-3">
           <CardHeader>
             <CardTitle>Voltage Output</CardTitle>
             <CardDescription>
@@ -172,7 +174,8 @@ export function Dashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={350}>
+            <div className="h-[250px] sm:h-[300px] lg:h-[350px]">
+            <ResponsiveContainer width="100%" height="100%">
               <LineChart data={voltageData.length > 0 ? voltageData : [{ time: '00:00', energy: 0, voltage: 0 }]}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="time" />
@@ -187,6 +190,7 @@ export function Dashboard() {
                 />
               </LineChart>
             </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
       </div>

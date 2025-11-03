@@ -116,12 +116,12 @@ export function History() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">History</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">History</h2>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Historical energy generation data and analytics
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={() => handleExport()}>
             <Download className="w-4 h-4 mr-2" />
             Export
@@ -133,7 +133,7 @@ export function History() {
         </div>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Button variant="default" size="sm">
           Last 7 Days
         </Button>
@@ -225,7 +225,8 @@ export function History() {
             <CardDescription>Energy generated per day over the selected period</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+            <div className="h-[250px] sm:h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
               <LineChart data={currentData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
@@ -246,6 +247,7 @@ export function History() {
                 />
               </LineChart>
             </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
 
@@ -255,7 +257,8 @@ export function History() {
             <CardDescription>Weekly energy generation comparison</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+            <div className="h-[250px] sm:h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
               <BarChart data={weeklyData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="week" />
@@ -264,6 +267,7 @@ export function History() {
                 <Bar dataKey="energy" fill="#82ca9d" />
               </BarChart>
             </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -274,7 +278,8 @@ export function History() {
           <CardDescription>System efficiency percentage over time</CardDescription>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
+          <div className="h-[250px] sm:h-[300px]">
+          <ResponsiveContainer width="100%" height="100%">
             <LineChart data={currentData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis
@@ -295,6 +300,7 @@ export function History() {
               />
             </LineChart>
           </ResponsiveContainer>
+          </div>
         </CardContent>
       </Card>
 
