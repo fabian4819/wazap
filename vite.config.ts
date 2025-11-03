@@ -10,4 +10,13 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'https://api.wazap.biz.id',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
+  }
 })

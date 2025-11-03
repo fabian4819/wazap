@@ -5,7 +5,6 @@ import { Badge } from '@/components/ui/badge'
 import {
   Calendar,
   Download,
-  Filter,
   TrendingUp,
   TrendingDown
 } from 'lucide-react'
@@ -14,13 +13,64 @@ import { historyApi } from '@/lib/api'
 import type { DailyData, WeeklyData, RecentActivity } from '@/lib/api'
 
 export function History() {
-  const [timeRange, setTimeRange] = useState('7days')
   const [dailyData, setDailyData] = useState<DailyData[]>([])
   const [weeklyData, setWeeklyData] = useState<WeeklyData[]>([])
   const [bestPerformance, setBestPerformance] = useState({ date: '', energy: 0, efficiency: 0 })
   const [avgDailyOutput, setAvgDailyOutput] = useState({ avgEnergy: 0, avgSteps: 0 })
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
   const [loading, setLoading] = useState(true)
+  const [showDatePicker, setShowDatePicker] = useState(false)
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
+  const [filteredData, setFilteredData] = useState<DailyData[]>([])
+
+  const handleExport = () => {
+    // Use filtered data if available, otherwise use all daily data
+    const dataToExport = filteredData.length > 0 ? filteredData : dailyData
+
+    // Prepare CSV data
+    const csvData = [
+      ['Date', 'Energy (mWh)', 'Efficiency (%)', 'Steps'],
+      ...dataToExport.map(day => [
+        new Date(day.date).toLocaleDateString(),
+        day.energy.toFixed(2),
+        day.efficiency.toFixed(2),
+        day.steps.toString()
+      ])
+    ]
+
+    // Convert to CSV string
+    const csvContent = csvData.map(row => row.join(',')).join('\n')
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', `energy-history-${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  const handleDateRangeFilter = () => {
+    if (startDate && endDate) {
+      // Filter data based on date range
+      const filtered = dailyData.filter(day => {
+        const date = new Date(day.date)
+        return date >= new Date(startDate) && date <= new Date(endDate)
+      })
+      setFilteredData(filtered)
+      setShowDatePicker(false)
+    }
+  }
+
+  const handleResetFilter = () => {
+    setFilteredData([])
+    setStartDate('')
+    setEndDate('')
+  }
 
   useEffect(() => {
     const fetchHistoryData = async () => {
@@ -53,9 +103,9 @@ export function History() {
     }
 
     fetchHistoryData()
-  }, [timeRange])
+  }, [])
 
-  const currentData = dailyData.length > 0 ? dailyData : []
+  const currentData = filteredData.length > 0 ? filteredData : (dailyData.length > 0 ? dailyData : [])
   const totalEnergy = currentData.reduce((sum, day) => sum + day.energy, 0)
   const avgEfficiency = currentData.length > 0
     ? currentData.reduce((sum, day) => sum + day.efficiency, 0) / currentData.length
@@ -72,15 +122,11 @@ export function History() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm">
-            <Filter className="w-4 h-4 mr-2" />
-            Filter
-          </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => handleExport()}>
             <Download className="w-4 h-4 mr-2" />
             Export
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => setShowDatePicker(!showDatePicker)}>
             <Calendar className="w-4 h-4 mr-2" />
             Date Range
           </Button>
@@ -88,20 +134,48 @@ export function History() {
       </div>
 
       <div className="flex gap-2">
-        {['7days', '30days', '90days', '1year'].map((range) => (
-          <Button
-            key={range}
-            variant={timeRange === range ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setTimeRange(range)}
-          >
-            {range === '7days' && 'Last 7 Days'}
-            {range === '30days' && 'Last 30 Days'}
-            {range === '90days' && 'Last 90 Days'}
-            {range === '1year' && 'Last Year'}
+        <Button variant="default" size="sm">
+          Last 7 Days
+        </Button>
+        {filteredData.length > 0 && (
+          <Button variant="outline" size="sm" onClick={handleResetFilter}>
+            Reset Filter
           </Button>
-        ))}
+        )}
       </div>
+
+      {showDatePicker && (
+        <Card className="p-4">
+          <div className="flex flex-col gap-4 md:flex-row md:items-end">
+            <div className="flex-1">
+              <label className="block text-sm font-medium mb-2">Start Date</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-sm font-medium mb-2">End Date</label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={handleDateRangeFilter} size="sm">
+                Apply
+              </Button>
+              <Button onClick={() => setShowDatePicker(false)} variant="outline" size="sm">
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>

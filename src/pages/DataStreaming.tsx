@@ -44,20 +44,27 @@ export function DataStreaming() {
       eventSource.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data)
-          const newReading: DataPoint = {
-            timestamp: data.timestamp || new Date().toISOString(),
-            voltage: data.voltage || 0,
-            current: data.current || 0,
-            power: data.power || 0,
-            temperature: data.temperature || 25.0
+
+          // Backend sends an array of data points, get the last (most recent) one
+          const dataArray = Array.isArray(data) ? data : [data]
+          const latestData = dataArray[dataArray.length - 1]
+
+          if (latestData) {
+            const newReading: DataPoint = {
+              timestamp: latestData.timestamp || new Date().toISOString(),
+              voltage: latestData.voltage || 0,
+              current: latestData.current || 0,
+              power: latestData.power || 0,
+              temperature: latestData.temperature || 25.0
+            }
+
+            setCurrentReading(newReading)
+
+            setRealtimeData(prev => {
+              const updated = [...prev, { ...newReading, timestamp: new Date(newReading.timestamp).toLocaleTimeString() }]
+              return updated.slice(-20)
+            })
           }
-
-          setCurrentReading(newReading)
-
-          setRealtimeData(prev => {
-            const updated = [...prev, { ...newReading, timestamp: new Date(newReading.timestamp).toLocaleTimeString() }]
-            return updated.slice(-20)
-          })
         } catch (error) {
           console.error('Error parsing stream data:', error)
         }
