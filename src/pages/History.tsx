@@ -11,6 +11,7 @@ import {
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
 import { historyApi } from '@/lib/api'
 import type { DailyData, WeeklyData, RecentActivity } from '@/lib/api'
+import { AIInsights } from '@/components/ai/AIInsights'
 
 export function History() {
   const [dailyData, setDailyData] = useState<DailyData[]>([])
@@ -366,6 +367,8 @@ export function History() {
           </CardContent>
         </Card>
       </div>
+
+      <AIInsights />
     </div>
   )
 }

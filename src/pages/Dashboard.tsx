@@ -12,6 +12,9 @@ import {
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts'
 import { dashboardApi } from '@/lib/api'
 import type { EnergyData } from '@/lib/api'
+import { AIInsights } from '@/components/ai/AIInsights'
+import { EnergyForecast } from '@/components/ai/EnergyForecast'
+import { AnomalyAlerts } from '@/components/ai/AnomalyAlerts'
 
 export function Dashboard() {
   const [totalEnergy, setTotalEnergy] = useState(0)
@@ -265,6 +268,13 @@ export function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <AnomalyAlerts />
+        <AIInsights />
+      </div>
+
+      <EnergyForecast />
     </div>
   )
 }
