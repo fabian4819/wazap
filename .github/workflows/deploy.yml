@@ -37,12 +37,24 @@ jobs:
             set -e
             APP_DIR="$HOME/apps/wazap"
 
-            # Pull latest changes
+            # Navigate to app directory
             cd $APP_DIR
-            git pull origin ${{ github.ref_name }}
+
+            # Discard local changes and pull latest
+            echo "Fetching latest changes..."
+            git fetch origin ${{ github.ref_name }}
+
+            # Discard any local changes (safe for deployment)
+            git reset --hard origin/${{ github.ref_name }}
+
+            # Clean untracked files (optional, uncomment if needed)
+            # git clean -fd
 
             # Install dependencies and build
+            echo "Installing dependencies..."
             npm install
+
+            echo "Building application..."
             npm run build
 
             # Copy nginx config if changed
