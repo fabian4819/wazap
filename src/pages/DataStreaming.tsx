@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -13,89 +12,17 @@ import {
   CheckCircle
 } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-
-interface DataPoint {
-  timestamp: string
-  voltage: number
-  current: number
-  power: number
-  force: number
-}
+import { useStreaming } from '@/contexts/StreamingContext'
 
 export function DataStreaming() {
-  const [isStreaming, setIsStreaming] = useState(false)
-  const [realtimeData, setRealtimeData] = useState<DataPoint[]>([])
-  const [currentReading, setCurrentReading] = useState<DataPoint>({
-    timestamp: new Date().toISOString(),
-    voltage: 0,
-    current: 0,
-    power: 0,
-    force: 0
-  })
-
-  useEffect(() => {
-    let eventSource: EventSource | null = null
-
-    if (isStreaming) {
-      // Create Server-Sent Events connection for raw data stream
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
-      eventSource = new EventSource(`${API_BASE_URL}/api/data/stream/raw`)
-
-      eventSource.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data)
-
-          // Backend sends an array of data points, get the last (most recent) one
-          const dataArray = Array.isArray(data) ? data : [data]
-          const latestData = dataArray[dataArray.length - 1]
-
-          if (latestData) {
-            const newReading: DataPoint = {
-              timestamp: latestData.timestamp || new Date().toISOString(),
-              voltage: latestData.voltage || 0,
-              current: latestData.current || 0,
-              power: latestData.power || 0,
-              force: latestData.force || 0
-            }
-
-            setCurrentReading(newReading)
-
-            setRealtimeData(prev => {
-              const updated = [...prev, { ...newReading, timestamp: new Date(newReading.timestamp).toLocaleTimeString() }]
-              return updated.slice(-20)
-            })
-          }
-        } catch (error) {
-          console.error('Error parsing stream data:', error)
-        }
-      }
-
-      eventSource.onerror = (error) => {
-        console.error('EventSource error:', error)
-        eventSource?.close()
-        setIsStreaming(false)
-      }
-    }
-
-    return () => {
-      if (eventSource) {
-        eventSource.close()
-      }
-    }
-  }, [isStreaming])
-
-  const handleStartStreaming = () => {
-    setIsStreaming(true)
-  }
-
-  const handlePauseStreaming = () => {
-    setIsStreaming(false)
-  }
-
-  const handleStopStreaming = () => {
-    setIsStreaming(false)
-    setRealtimeData([])
-  }
+  const {
+    isStreaming,
+    realtimeData,
+    currentReading,
+    startStreaming,
+    pauseStreaming,
+    stopStreaming
+  } = useStreaming()
 
   const connectionStatus = {
     stm32: isStreaming ? 'connected' : 'disconnected',
@@ -114,7 +41,7 @@ export function DataStreaming() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Button
-            onClick={handleStartStreaming}
+            onClick={startStreaming}
             disabled={isStreaming}
             className="bg-green-600 hover:bg-green-700"
           >
@@ -123,7 +50,7 @@ export function DataStreaming() {
           </Button>
           <Button
             variant="outline"
-            onClick={handlePauseStreaming}
+            onClick={pauseStreaming}
             disabled={!isStreaming}
           >
             <Pause className="w-4 h-4 mr-2" />
@@ -131,7 +58,7 @@ export function DataStreaming() {
           </Button>
           <Button
             variant="outline"
-            onClick={handleStopStreaming}
+            onClick={stopStreaming}
             disabled={!isStreaming && realtimeData.length === 0}
           >
             <Square className="w-4 h-4 mr-2" />
