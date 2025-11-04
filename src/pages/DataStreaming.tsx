@@ -19,7 +19,7 @@ interface DataPoint {
   voltage: number
   current: number
   power: number
-  temperature: number
+  force: number
 }
 
 export function DataStreaming() {
@@ -30,7 +30,7 @@ export function DataStreaming() {
     voltage: 0,
     current: 0,
     power: 0,
-    temperature: 25.0
+    force: 0
   })
 
   useEffect(() => {
@@ -55,7 +55,7 @@ export function DataStreaming() {
               voltage: latestData.voltage || 0,
               current: latestData.current || 0,
               power: latestData.power || 0,
-              temperature: latestData.temperature || 25.0
+              force: latestData.force || 0
             }
 
             setCurrentReading(newReading)
@@ -247,12 +247,12 @@ export function DataStreaming() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Temperature</CardTitle>
+            <CardTitle className="text-sm font-medium">Force</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{currentReading.temperature.toFixed(1)}°C</div>
+            <div className="text-2xl font-bold">{currentReading.force.toFixed(2)}N</div>
             <p className="text-xs text-muted-foreground">
-              System temperature
+              Applied force
             </p>
           </CardContent>
         </Card>
@@ -363,7 +363,7 @@ export function DataStreaming() {
                       <span>V: {reading.voltage.toFixed(2)}V</span>
                       <span>I: {reading.current.toFixed(2)}mA</span>
                       <span>P: {reading.power.toFixed(2)}mW</span>
-                      <span>T: {reading.temperature.toFixed(1)}°C</span>
+                      <span>F: {reading.force.toFixed(2)}N</span>
                     </div>
                   </div>
                 ))}
